@@ -797,11 +797,12 @@ By default, the web dashboard is available at http://127.0.0.1:5665.
 To learn about the distinct dashboard options, refer to the [Web dashboard documentation](https://grafana.com/docs/k6/latest/results-output/web-dashboard/).
 
 
-## 2. Did you say full-stack? YES!
+
+## 2. Did you say full-stack? YES!  
 
 Even though we have been using HTTP requests so far, k6 is not limited to that. You can use it to test all kinds of things! It natively supports other protocols like gRPC, WebSockets, and Redis - and you can extend k6 to test other protocols using k6 Extensions!
 
-### 2.1 Browser
+### 2.1. Browser
 
 You can also use k6 to interact with and test your web apps, as with Playwright/Puppeteer. 
 
@@ -884,7 +885,7 @@ Also, you should be able to see the Checks we have defined in the output. Plus, 
 
 For more information about how to use the browser module, refer to the [k6 browser documentation](https://grafana.com/docs/k6/latest/using-k6-browser/). 
 
-### 2.2 WebSockets
+### 2.2. WebSockets
 
 Before we show the k6 WebSocket example, note that QuickPizza also has a WebSocket endpoint!
 
@@ -948,9 +949,170 @@ For more examples and details about the k6 WebSocket API, refer to the [k6 WebSo
 
 ## 3. And more
 
+### 3.1. Scenarios
 
+Scenarios configure how VUs and iteration are executed in a more fine-grained way. With scenarios, you can model diverse workloads, or traffic patterns in your tests.
 
-### Additional resources
+Benefits of using scenarios include:
+
+- Easier, more flexible test organization.
+- Simulate more realistic traffic. 
+- Parallel or sequential workloads. 
+- Granular results analysis.
+
+Let's try it out! To use scenarios, you need to change the `options` - an example is:
+```javascript
+export let options = {
+  scenarios: {
+    smoke: {
+      executor: "constant-vus",
+      vus: 1,
+      duration: "10s",
+    },
+    load: {
+      executor: "ramping-vus",
+      startVUs: 0,
+      stages: [
+        { duration: '5s', target: 5 },
+        { duration: '10s', target: 5 },
+        { duration: '5s', target: 0 },
+      ],
+      gracefulRampDown: "5s",
+      startTime: "10s",
+    },
+  },
+};
+```
+
+In this case, we have defined two scenarios: `smoke` and `load`. The `smoke` scenario will run with a single VU for 10 seconds. The `load` scenario will ramp up from 0 to 5 VUs in 5 seconds, stay at 5 VUs for 10 seconds, and then ramp down to 0 VUs in 5 seconds. The second scenario will start 10 seconds after the first one.
+
+As you can see, we are using two types of executors, `constant-vus` and `ramping-vus`. These are similar to what we have seen earlier and are focused on VUs. But other executors are focused on the number of iterations and iteration rate (e.g., `per-vu-iterations` and `constant-arrival-rate`). 
+
+Let's change our script to use scenarios and rerun the test. If you are running k6 locally, you should see two progress bars, one for each scenario, telling you how many VUs are running and how your test behaves in real time.
+
+> TIP: You can use `exec` to run a specific function in your script instead of the default function. For example, you could configure a scenario to run the `functionA` function, and another scenario to run the `functionB` function. If you don't specify an `exec` property, k6 will run the default function. 
+
+You can learn more about scenarios [in our docs](https://grafana.com/docs/k6/latest/using-k6/scenarios/)
+
+### 3.2. Composability
+
+In k6, you can mix and match the features you need to test what you really need to test.
+
+For example, you can use k6 to generate some constant load in your HTTP API while using the Browser APIs to test your web app to understand better how the frontend behaves and what your users are experiencing when using your app.
+
+Accomplishing this is easy with Scenarios. You can define multiple scenarios, each one with its own configuration. Then, you can run them all at the same time.
+
+Let's try it out! Create a new script named `mixed.js` with the following content:
+```javascript
+import http from "k6/http";
+import { check, sleep } from "k6";
+import { browser } from "k6/experimental/browser";
+
+const BASE_URL = __ENV.BASE_URL || 'http://localhost:3333';
+
+export const options = {
+  scenarios: {
+    smoke: {
+      exec: "getPizza",
+      executor: "constant-vus",
+      vus: 1,
+      duration: "10s",
+    },
+    stress: {
+      exec: "getPizza",
+      executor: "ramping-vus",
+      stages: [
+        { duration: '5s', target: 5 },
+        { duration: '10s', target: 5 },
+        { duration: '5s', target: 0 },
+      ],
+      gracefulRampDown: "5s",
+      startTime: "10s",
+    },
+    browser: {
+      exec: "checkFrontend",
+      executor: "constant-vus",
+      vus: 1,
+      duration: "30s",
+      options: {
+        browser: {
+          type: "chromium",
+        },
+      },
+    }
+  },
+};
+
+export function getPizza() {
+  let restrictions = {
+    maxCaloriesPerSlice: 500,
+    mustBeVegetarian: false,
+    excludedIngredients: ["pepperoni"],
+    excludedTools: ["knife"],
+    maxNumberOfToppings: 6,
+    minNumberOfToppings: 2
+  }
+  let res = http.post(`${BASE_URL}/api/pizza`, JSON.stringify(restrictions), {
+    headers: {
+      'Content-Type': 'application/json',
+      'X-User-ID': 1231231,
+    },
+  });
+  check(res, { "status is 200": (res) => res.status === 200 });
+  console.log(`${res.json().pizza.name} (${res.json().pizza.ingredients.length} ingredients)`);
+  sleep(1);
+}
+
+export async function checkFrontend() {
+  const page = browser.newPage();
+
+  try {
+    await page.goto(BASE_URL)
+    check(page, {
+      'header': page.locator('h1').textContent() == 'Looking to break out of your pizza routine?',
+    });
+
+    await page.locator('//button[. = "Pizza, Please!"]').click();
+    page.waitForTimeout(500);
+    page.screenshot({ path: `screenshots/${__ITER}.png` });
+    check(page, {
+      'recommendation': page.locator('div#recommendations').textContent() != '',
+    });
+  } finally {
+    page.close();
+  }
+}
+```
+
+That's it. Now, you should be able to run it as you would do with any test, and you get the best of both worlds!
+
+You can read more about that scenario in [this section](https://grafana.com/docs/k6/latest/using-k6-browser/running-browser-tests/#run-both-browser-level-and-protocol-level-tests-in-a-single-script) of our docs.
+
+### 3.3. Studio
+
+WIP
+
+### 3.4. CI/CD integrations
+
+WIP
+
+### 3.5. Kubernetes Operator
+
+Yup, we also have a [Kubernetes Operator](https://github.com/grafana/k6-operator)!
+
+If you have a Kubernetes cluster, you can use our Operator to run distributed tests in your cluster. You can use it to run tests with thousands of VUs, or to run tests that require a lot of resources (e.g., lots of CPU or memory).
+
+### 3.6. Grafana Cloud k6
+
+It is our Cloud offering. It is the natural continuation of k6 OSS.
+
+You can run your test locally, as we did until now, and stream the results to our Cloud to easily persist, analyze, and compare them. Alternatively, you can run them all over the world by switching from `k6 run` to `k6 cloud` in the CLI - as easy as that. All that, plus lots of more useful features and a very deep integration with Grafana, so you can correlate all your internal data with your test's data!
+
+We have an **actually useful** free tier, so, yeah, if that sounds interesting, [give it a look](https://grafana.com/products/cloud/k6/) - and if you have any questions, feel free to ask (here or later!).
+
+![cloud](./media/cloud.png)
+
+## 4.1. Additional resources
 
 Wow, if you have reached this point, you have learned a lot about k6. But there is more!
 
@@ -963,46 +1125,3 @@ Still, the [Quickpizza repository](https://github.com/grafana/quickpizza) includ
 - One example using the `k6-operator` to distribute the test load among Kubernetes Pods
 - Other integrations with Grafana and the Grafana o11y stack
 - And more!
-
-### `scenarios` 
-
-This workshop won't cover all the different scenario options, so please refer to the [Scenario documentation for further details](https://grafana.com/docs/k6/latest/using-k6/scenarios/). 
-
-The Scenarios API allows modeling the workload for different use cases and execute multiple functions, each with distinct workloads.
-
-In this example, we’ll use scenarios to demo how to set the workload in terms of requests per second, specifically, 20 requests per second for 10 seconds. 
-
-```js
-export const options = {
-  scenarios: {
-    default: {
-      executor: 'constant-arrival-rate',
-
-      // How long the test lasts
-      duration: '10s',
-
-      // Iterations rate. By default, the `timeUnit` rate is 1s. 
-      rate: 20,
-
-
-      // Required. The value can be the same as the rate.
-      // k6 warns during execution if more VUs are needed.
-      preAllocatedVUs: 20,
-    },
-  },
-};
-```
-
-Replace the options settings in the previous script. 
-
-This setting uses the [`constant-arrival-rate` scenario](https://grafana.com/docs/k6/latest/using-k6/scenarios/executors/constant-arrival-rate/) to schedule a rate of iterations, telling k6 to schedule the execution of **20 iterations** (`rate`: 20) **per second** (the default `timeUnit`).
-
-
-Given that each iteration executes only one Pizza request, the test will run 20 requests per second. Mathematically speaking:
-- 20 iterations per second x 1 request per iteration = 20 requests per second 
-
-Run the test. After completion, you can see the test request rate by looking at the `http_reqs` metric, which reports the number of http requests and the request rate. In our example, it is close to our goal of 20 requests per second.
-
-```bash
-http_reqs......................: 601    19.680544/s
-```
