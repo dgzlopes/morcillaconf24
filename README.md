@@ -4,6 +4,36 @@
   * [0.1. Introduction](#01-introduction)
   * [0.2. Requirements](#02-requirements)
   * [0.3.  Run the local playground](#03--run-the-local-playground)
+- [1. Fundamentals](#1-fundamentals)
+  * [1.1. What the heck is Grafana k6?](#11-what-the-heck-is-grafana-k6-)
+  * [1.2. Run your first test](#12-run-your-first-test)
+  * [1.3. Configure the test load](#13-configure-the-test-load)
+    + [1.3.1. `vus` and `iterations`](#131--vus--and--iterations-)
+    + [1.3.2. `vus` and `duration`](#132--vus--and--duration-)
+    + [1.3.3. `stages`](#133--stages-)
+  * [1.4. Add think time](#14-add-think-time)
+  * [1.5. Define the pass/fail criteria](#15-define-the-pass-fail-criteria)
+    + [1.5.1. Checks](#151-checks)
+    + [1.5.2. Thresholds](#152-thresholds)
+  * [1.6 Parameterize the test data](#16-parameterize-the-test-data)
+  * [1.7. Visualize results with Prometheus and Grafana](#17-visualize-results-with-prometheus-and-grafana)
+  * [1.8. More stuff](#18-more-stuff)
+    + [1.8.1. Test lifecycle hooks](#181-test-lifecycle-hooks)
+    + [1.8.2. CLI overrides and environment variables](#182-cli-overrides-and-environment-variables)
+    + [1.8.3. Custom metrics](#183-custom-metrics)
+    + [1.8.4. Custom summary](#184-custom-summary)
+    + [1.8.5. Web dashboard](#185-web-dashboard)
+- [2. Did you say full-stack? YES!](#2-did-you-say-full-stack--yes-)
+  * [2.1. Browser](#21-browser)
+  * [2.2. WebSockets](#22-websockets)
+- [3. And more](#3-and-more)
+  * [3.1. Scenarios](#31-scenarios)
+  * [3.2. Composability](#32-composability)
+  * [3.3. Studio](#33-studio)
+  * [3.4. CI/CD integrations](#34-ci-cd-integrations)
+  * [3.5. Kubernetes Operator](#35-kubernetes-operator)
+  * [3.6. Grafana Cloud k6](#36-grafana-cloud-k6)
+- [4. Additional resources](#4-additional-resources)
 
 <small><i><a href='http://ecotrust-canada.github.io/markdown-toc/'>Table of contents generated with markdown-toc</a></i></small>
 
@@ -1112,7 +1142,7 @@ We have an **actually useful** free tier, so, yeah, if that sounds interesting, 
 
 ![cloud](./media/cloud.png)
 
-## 4.1. Additional resources
+## 4. Additional resources
 
 Wow, if you have reached this point, you have learned a lot about k6. But there is more!
 
