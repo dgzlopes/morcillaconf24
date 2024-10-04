@@ -1120,11 +1120,17 @@ You can read more about that scenario in [this section](https://grafana.com/docs
 
 ### 3.3. Studio
 
-WIP
+With k6 Studio, you can quickly record a user flow in a browser, generate and inspect a HAR recording, customize your test script using predefined or custom rules, and test and debug your script to ensure it's working as expected. The goal is to provide a seamless experience for generating k6 test scripts, making it easier for anyone to create performance tests in an interactive interface.
+
+To learn more about k6 Studio, refer to the [k6 Studio GitHub repository](https://github.com/grafana/k6-studio).
+
+
 
 ### 3.4. CI/CD integrations
 
-WIP
+Grafana k6 has integrations with popular CI/CD tools like GitHub Actions, GitLab CI, and Jenkins. These integrations allow you to run your tests as part of your CI/CD pipeline, ensuring that your application is always tested before it goes to production.
+
+To learn more about the CI/CD integrations, refer to the [CI/CD integrations documentation](https://grafana.com/docs/k6/latest/misc/integrations/#continuous-integration-and-continuous-delivery).
 
 ### 3.5. Kubernetes Operator
 
