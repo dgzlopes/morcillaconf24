@@ -1,5 +1,7 @@
 # MorcillaConf24 Workshop: Full-stack performance testing with Grafana k6
 
+Useful links: [slides](https://docs.google.com/presentation/d/1aCQAErAxG3upGeXvvMcqRp1KeYP8zK2FUTHCzT-B_d0/edit#slide=id.g238d3a4a317_0_100) / [docs](https://grafana.com/docs/k6/latest/) 
+
 - [0. Before we start](#0-before-we-start)
   * [0.1. Introduction](#01-introduction)
   * [0.2. Requirements](#02-requirements)
